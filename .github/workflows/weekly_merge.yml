@@ -1,42 +1,30 @@
-name: Weekly Merge Develop to Stage
+name: Weekly Sync from Develop to Stage
 
 on:
- schedule:
-    - cron: '0 0 * * 1' # This runs the job every Monday at midnight UTC
+  schedule:
+    - cron: '0 12 * * MON'
 
 jobs:
- merge:
+  sync:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-      with:
-        ref: develop
+      - name: Checkout develop branch
+        uses: actions/checkout@v2
+        with:
+          ref: develop
 
-    - name: Create a new branch
-      run: |
-        BRANCH="pr_$(date +%s)"
-        git checkout -b $BRANCH
+      - name: Create new branch
+        run: |
+          git checkout -b sync-to-stage
+          git push origin sync-to-stage
 
-    - name: Make a dummy commit if no changes are present
-      run: |
-        if [ -z "$(git status --porcelain)" ]; then
-          echo "No changes to commit. Making a dummy commit."
-          touch dummy.txt
-          git add dummy.txt
-          git commit -m "Dummy commit to avoid 'No commits between stage and pr_1710746942' error"
-        fi
-
-    - name: Push the branch to remote
-      run: |
-        git push origin $BRANCH
-
-    - name: Create a pull request
-      uses: peter-evans/create-pull-request@v3
-      with:
-        title: "Weekly merge develop to stage"
-        body: "Automated pull request to merge changes from develop to stage."
-        base: stage
-        head: ${{ github.actor }}:${{ github.ref }}
-        draft: false
-        reviewers: cyz@gmail.com,xyz@gmail.com
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+          title: "Sync develop to stage"
+          body: "This PR syncs the develop branch to the stage branch."
+          branch: "sync-to-stage"
+          base: "stage"
+          draft: false
+          labels: "sync"
+          reviewers: "cyz@gmail.com,xyz@gmail.com"
